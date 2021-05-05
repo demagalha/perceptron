@@ -17,12 +17,12 @@ sigmoid_der_v = np.vectorize(sigmoid_der)
 
 W_RANGE = [-0.5, 0.5] #inicializa os pesos entre esses valores
 class Layer:
-    def __init__(self,a = None, z = None, theta = None, bias = None, delta = None):
-        self.a = a
-        self.z = z #maybe its not needed <<<, delete later
-        self.w = theta #weights (neurons) from w_ij
-        self.b = bias #bias weights
-        self.delta = delta #error of neuron i at layer, nx1 matrix (n nodes)
+    def __init__(self):
+        self.a = None
+        self.z = None #maybe its not needed <<<, delete later
+        self.w = None #weights (neurons) from w_ij
+        self.b = None #bias weights
+        self.delta = None #error of neuron i at layer, nx1 matrix (n nodes)
         self.w_grad = None #partial derivatives of cost (error) wrt weights
         self.b_grad = None #partial derivatives of cost fucntion wrt biases
 
@@ -64,18 +64,41 @@ class MultiLayer:
             self.layer[i].w_grad = np.dot(self.layer[i+1].delta,self.layer[i].a.transpose())
             self.layer[i].b_grad = self.layer[i+1].delta
 
-    def update_weights(self,l_rate):
+    def update_weights(self,l_rate): ###nao esta sendo usado
         for i in reversed(range(len(self.num_layers)-1)):
-            self.layer[i].w = self.layer[i].w - l_rate*self.layer[i].w_grad
-            self.layer[i].b = self.layer[i].b - l_rate*self.layer[i].b_grad
+            self.layer[i].w = self.layer[i].w - l_rate*self.layer[i].w_grad #errado
+            self.layer[i].b = self.layer[i].b - l_rate*self.layer[i].b_grad #errado
 
-    def train(self,inputs_,outputs):
-        for k in range(len(inputs_)):
-            self.forward_propagate(inputs_[k].reshape(inputs_[0].size,1))
-            #print(inputs_[k].reshape(inputs_[0].size,1).shape)
-            self.back_prop_error(outputs[k].reshape(outputs[0].size,1))
-            self.gradient_eval()
-            self.update_weights(0.05)
+    def train(self,inputs_,outputs): #adicionar loop de epochs
+        for i in range(100):
+            delta_w = []
+            delta_b = []
+            #print(self.layer[0].w)
+            for s in range(len(self.num_layers)-1):
+                delta_w.append(np.zeros((self.num_layers[s+1],self.num_layers[s])))
+                delta_b.append(np.zeros((self.num_layers[s+1],1)))
+            for k in range(len(inputs_)):
+                self.forward_propagate(inputs_[k].reshape(inputs_[0].size,1))
+                self.back_prop_error(outputs[k].reshape(outputs[0].size,1))
+                #print(outputs[k].reshape(outputs[0].size,1))
+                #print(self.layer[-1].delta[-1])
+                self.gradient_eval()
+                #print(self.layer[0].w_grad)
+                #print('---')
+                for g in range(len(self.num_layers)-1):
+                    delta_w[g] = delta_w[g] + self.layer[g].w_grad
+                    delta_b[g] = delta_b[g] + self.layer[g].b_grad
+            D_w = []
+            D_b = []
+            for h in range(len(self.num_layers)-1):
+                D_w.append((1/len(inputs_))*delta_w[h])
+                D_b.append((1/len(inputs_))*delta_b[h])
+            for m in range(len(self.num_layers)-1):
+                self.layer[m].w = self.layer[m].w - 0.05*D_w[m]
+                self.layer[m].b = self.layer[m].b - 0.05*D_b[m]
+
+
+                    
 
 
 ################ ESTA COM PROBLEMA NA ATUALIZACAO DOS PESOS, VERIFICAR GRADIENTE
@@ -91,7 +114,9 @@ b = np.array([[-10]]).transpose() #MUST BE A COLUMN
 a.initialize_network(w,b)
 input_ = np.array([[1,1]]).transpose() #column
 a.forward_propagate(input_)
-print(a.layer[-1].a)
+#print(a.layer[-1].a)
+
+'''
 a.back_prop_error(np.array([[1]]).reshape(1,1))
 print(a.layer[1].delta)
 
@@ -102,7 +127,7 @@ print(t.layer[2].a)
 print(t.layer[2].delta)
 print(t.layer[1].delta)
 print(t.layer[0].delta)
-
+'''
 
 
 def read_data(data,inputs):
@@ -120,6 +145,7 @@ def read_data(data,inputs):
 
 
 x,y = read_data("classification2.txt",2)
+
 
 net = MultiLayer([2,2,2,1])
 net.initialize_network()
@@ -150,5 +176,7 @@ print(net.layer[1].b)
 
 for i in range(len(x)):
 
-    net.forward_propagate(np.array(x[i].reshape(2,1)))
-    print(math.fabs(net.layer[-1].a-y[i]))
+    net.forward_propagate(x[i].reshape(2,1))
+    #print(x[i].reshape(2,1))
+    print(net.layer[-1].a)
+
